@@ -35,7 +35,7 @@ func (h *Hello) wsWebSocket(websocket *solid.WebSocket) {
 
 		fmt.Printf("Received message: %s\n", message)
 
-		err = websocket.WriteMessage(1, []byte("Hello from WebSocket!"))
+		err = websocket.SendTextMessage("Hello from WebSocket!")
 
 		if err != nil {
 			fmt.Println("Error writing message:", err)

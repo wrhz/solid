@@ -7,18 +7,18 @@
 </head>
 <body>
     <script type="module">
-        import SolidWebSocket from '/js/websocket.js';
+        import { SolidWebSocket } from '/js/websocket.js';
 
         const socket = new SolidWebSocket('/ws');
 
         socket.on("open", function(event) {
             console.log('WebSocket connection opened');
 
-            socket.send('Hello, Server!');
+            socket.sendTextMessage('Hello, Server!');
         });
 
         socket.on('message', function(event) {
-            console.log('Message from server:', event.data);
+            console.log(event);
         });
     </script>
 </body>

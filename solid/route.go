@@ -213,7 +213,7 @@ func (r *RouteStruct) routeChain(handler http.Handler) http.Handler {
 		if id == "" {
 			id = uuid.New().String()
 		}
-		ctx := context.WithValue(r.Context(), "requestID", id)
+		ctx := context.WithValue(r.Context(), "requestId", id)
 		w.Header().Set("X-Request-ID", id)
 
 		staticMaxAge, err := settings.GetStaticMaxAge()
@@ -248,7 +248,7 @@ func (r *RouteStruct) websocketChain(handler http.Handler) http.Handler {
 		if id == "" {
 			id = uuid.New().String()
 		}
-		ctx := context.WithValue(r.Context(), "requestID", id)
+		ctx := context.WithValue(r.Context(), "requestId", id)
 		w.Header().Set("X-Request-ID", id)
 
 		fmt.Printf("[%s] WebSocket %s\n", time.Now().Format("2006-01-02 15:04:05"), r.URL.Path)
