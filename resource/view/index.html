@@ -4,22 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebSocket Test</title>
+    <link rel="stylesheet" href="/static/scss/style.css">
 </head>
 <body>
-    <script type="module">
-        import { SolidWebSocket } from '/js/websocket.js';
-
-        const socket = new SolidWebSocket('/ws');
-
-        socket.on("open", function(event) {
-            console.log('WebSocket connection opened');
-
-            socket.sendTextMessage('Hello, Server!');
-        });
-
-        socket.on('message', function(event) {
-            console.log(event);
-        });
-    </script>
+    <script type="module" src="/static/ts/script.js"></script>
+    <h1 class="style">Hello</h1>
 </body>
 </html>

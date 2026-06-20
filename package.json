@@ -1,0 +1,29 @@
+{
+  "name": "solid",
+  "version": "1.0.0",
+  "description": "This is a full-stack framework based on the Go language, created specifically to enhance developer happiness.",
+  "main": "index.js",
+  "scripts": {
+    "build": "vite build && sass static:dist/static"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wrhz/Solid.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/wrhz/Solid/issues"
+  },
+  "homepage": "https://github.com/wrhz/Solid#readme",
+  "devDependencies": {
+    "sass": "^1.101.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.3"
+  }
+}

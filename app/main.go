@@ -75,15 +75,39 @@ func main() {
 
 	handleRoutes(serve)
 
+	serve.PathPrefix("/static/ts/").Handler(
+		gziphandler.GzipHandler(
+			http.StripPrefix("/static/ts/", http.FileServer(http.Dir("./dist/static/ts"))),
+		),
+	)
+
+	serve.PathPrefix("/static/js/").Handler(
+		gziphandler.GzipHandler(
+			http.StripPrefix("/static/js/", http.FileServer(http.Dir("./dist/static/js"))),
+		),
+	)
+
+	serve.PathPrefix("/static/scss/").Handler(
+		gziphandler.GzipHandler(
+			http.StripPrefix("/static/scss/", http.FileServer(http.Dir("./dist/static/scss"))),
+		),
+	)
+
+	serve.PathPrefix("/static/sass/").Handler(
+		gziphandler.GzipHandler(
+			http.StripPrefix("/static/sass/", http.FileServer(http.Dir("./dist/static/sass"))),
+		),
+	)
+
 	serve.PathPrefix("/static/").Handler(
 		gziphandler.GzipHandler(
 			http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))),
 		),
 	)
 
-	serve.PathPrefix("/js/").Handler(
+	serve.PathPrefix("/lib/").Handler(
 		gziphandler.GzipHandler(
-			http.StripPrefix("/js/", http.FileServer(http.Dir("./resource/js"))),
+			http.StripPrefix("/lib/", http.FileServer(http.Dir("./dist/resource/lib"))),
 		),
 	)
 
