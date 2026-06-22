@@ -21,9 +21,9 @@ function handleEvent(callback: Function): Function {
 
 class SolidWebSocket {
     datas: string[] = []
-    url
-    socket
-    readyState
+    url: string
+    socket: WebSocket
+    private readyState: 0 | 1 | 2 | 3
 
     constructor(url: string) {
         this.url = url;
@@ -31,7 +31,7 @@ class SolidWebSocket {
         this.readyState = this.socket.readyState;
     }
 
-    send(data: object) {
+    private send(data: object) {
         if (this.socket.readyState !== WebSocket.OPEN) {
             this.datas.push(JSON.stringify(data));
         } else {
@@ -39,38 +39,7 @@ class SolidWebSocket {
         }
     }
 
-    sendTextMessage(data: string) {
-        const message = {
-            type: "text",
-            data: data
-        };
-
-        this.send(message);
-    }
-
-    sendBinaryMessage(data: any) {
-        const message = {
-            type: "binary",
-            data: data
-        };
-
-        this.send(message);
-    }
-
-    sendJSONMessage(data: string) {
-        const message = {
-            type: "json",
-            data: data
-        };
-
-        this.send(message);
-    }
-
-    close() {
-        this.socket.close();
-    }
-
-    push() {
+    private push() {
         for (const data of this.datas) {
             this.socket.send(data);
         }
@@ -78,7 +47,7 @@ class SolidWebSocket {
         this.datas = []
     }
 
-    async reconnect() {
+    private async reconnect() {
         let n = 0;
         while (this.socket.readyState !== WebSocket.OPEN && n < 5) {
             console.warn(`WebSocket connection lost. Attempting to reconnect... (Attempt ${n + 1})`);
@@ -87,7 +56,38 @@ class SolidWebSocket {
         }
     }
 
-    on(event: string, callback: Function) {
+    public sendTextMessage(data: string) {
+        const message = {
+            type: "text",
+            data: data
+        };
+
+        this.send(message);
+    }
+
+    public sendBinaryMessage(data: any) {
+        const message = {
+            type: "binary",
+            data: data
+        };
+
+        this.send(message);
+    }
+
+    public sendJSONMessage(data: string) {
+        const message = {
+            type: "json",
+            data: data
+        };
+
+        this.send(message);
+    }
+
+    public close() {
+        this.socket.close();
+    }
+
+    public on(event: string, callback: Function) {
         switch (event) {
             case 'open':
                 this.socket.onopen = (event) => {
@@ -123,6 +123,10 @@ class SolidWebSocket {
             default:
                 console.warn(`Unsupported event type: ${event}`);
         }
+    }
+
+    public getReadyState(): 0 | 1 | 2 | 3 {
+        return this.readyState
     }
 }
 

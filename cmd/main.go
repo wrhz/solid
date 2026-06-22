@@ -1,27 +1,26 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 	"solid/config"
 	"solid/solid"
 	"strconv"
+	"syscall"
+	"time"
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/gorilla/mux"
-	"github.com/gorilla/websocket"
 )
-
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
 
 func handleConfigs() {
 	config.ServerConfig()
 	config.SettingsConfig()
 	config.WebSocketConfig()
+	config.DatabaseConfig()
 }
 
 func handleRoutes(serve *mux.Router) {
@@ -78,6 +77,12 @@ func handleStatic(serve *mux.Router) {
 	)
 }
 
+func serverFinish() {
+	if err := solid.RemoveGorm(); err != nil {
+		fmt.Printf("Remove GORM error: %v\n", err)
+	}
+}
+
 func main() {
 	handleConfigs()
 
@@ -96,6 +101,8 @@ func main() {
 	handleRoutes(serve)
 
 	handleStatic(serve)
+
+	solid.InitGorm()
 
 	fmt.Println("Server starting on port:", serverConfig.GetPort())
 
@@ -117,7 +124,24 @@ func main() {
 		return
 	}
 
-	if err := server.ListenAndServe(); err != nil {
-		fmt.Println("Server failed:", err)
+	go func ()  {
+		if err := server.ListenAndServe(); err != nil {
+			fmt.Println("Server failed:", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		fmt.Printf("Server close timeout or error: %v\n", err)
+	} else {
+		fmt.Println("Server closed")
 	}
+
+	serverFinish()
 }

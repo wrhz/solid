@@ -3,6 +3,7 @@ package solid
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -23,14 +24,50 @@ type SolidRoute interface {
 	RegisterMiddleware(*RouteStruct)
 }
 
-var getRoutes = map[string]func(w http.ResponseWriter, r *http.Request){}
-var postRoutes = map[string]func(w http.ResponseWriter, r *http.Request){}
-var patchRoutes = map[string]func(w http.ResponseWriter, r *http.Request){}
-var deleteRoutes = map[string]func(w http.ResponseWriter, r *http.Request){}
-var putRoutes = map[string]func(w http.ResponseWriter, r *http.Request){}
-var optionsRoutes = map[string]func(w http.ResponseWriter, r *http.Request){}
-var headRoutes = map[string]func(w http.ResponseWriter, r *http.Request){}
-var websocketRoutes = map[string]func(w http.ResponseWriter, r *http.Request){}
+var getRoutes = map[string]func(w http.ResponseWriter, r *http.Request) {}
+var postRoutes = map[string]func(w http.ResponseWriter, r *http.Request) {}
+var patchRoutes = map[string]func(w http.ResponseWriter, r *http.Request) {}
+var deleteRoutes = map[string]func(w http.ResponseWriter, r *http.Request) {}
+var putRoutes = map[string]func(w http.ResponseWriter, r *http.Request) {}
+var optionsRoutes = map[string]func(w http.ResponseWriter, r *http.Request) {}
+var headRoutes = map[string]func(w http.ResponseWriter, r *http.Request) {}
+var websocketRoutes = map[string]func(w http.ResponseWriter, r *http.Request) {}
+
+func routeRequestStart(ctx *Context) {
+	id := ctx.RequestID()
+
+	if id != "" {
+		GormDatabasesManager.Set(id)
+
+		db, ok := GormDatabasesManager.Get(id)
+
+		if ok {
+			ctx.SetGormDatabase(db)
+		}
+	}
+}
+
+func routeRequestEnd(ctx *Context, err error) {
+	id := ctx.RequestID()
+
+	if id == "" { return }
+
+	tx, ok := GormDatabasesManager.Get(id)
+
+	if !ok { return }
+
+	if err == nil {
+		if err := tx.Commit().Error; err != nil {
+			log.Fatal("Commit error:", err)
+		}
+	} else {
+		if err := tx.Rollback().Error; err != nil {
+			log.Fatal("‌Rollback error:", err)
+		}
+	}
+
+	GormDatabasesManager.Delete(id)
+}
 
 func GetRoutes() map[string]func(w http.ResponseWriter, r *http.Request) {
 	return getRoutes
@@ -68,49 +105,77 @@ func NewRoute() *RouteStruct {
 	return &RouteStruct{perfix: ""}
 }
 
-func (r *RouteStruct) Get(path string, callFunc func(c *Context)) {
+func (r *RouteStruct) Get(path string, callFunc func(c *Context) error) {
 	getRoutes[r.perfix+path] = r.routeChain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		callFunc(&Context{Writer: w, Request: req})
+		ctx := &Context{Writer: w, Request: req}
+
+		routeRequestStart(ctx)
+		
+		routeRequestEnd(ctx, callFunc(ctx))
 	})).ServeHTTP
 }
 
-func (r *RouteStruct) Post(path string, callFunc func(c *Context)) {
+func (r *RouteStruct) Post(path string, callFunc func(c *Context) error) {
 	postRoutes[r.perfix+path] = r.routeChain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		callFunc(&Context{Writer: w, Request: req})
+		ctx := &Context{Writer: w, Request: req}
+		
+		routeRequestStart(ctx)
+		
+		routeRequestEnd(ctx, callFunc(ctx))
 	})).ServeHTTP
 }
 
-func (r *RouteStruct) Patch(path string, callFunc func(c *Context)) {
+func (r *RouteStruct) Patch(path string, callFunc func(c *Context) error) {
 	patchRoutes[r.perfix+path] = r.routeChain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		callFunc(&Context{Writer: w, Request: req})
+		ctx := &Context{Writer: w, Request: req}
+		
+		routeRequestStart(ctx)
+		
+		routeRequestEnd(ctx, callFunc(ctx))
 	})).ServeHTTP
 }
 
-func (r *RouteStruct) Delete(path string, callFunc func(c *Context)) {
+func (r *RouteStruct) Delete(path string, callFunc func(c *Context) error) {
 	deleteRoutes[r.perfix+path] = r.routeChain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		callFunc(&Context{Writer: w, Request: req})
+		ctx := &Context{Writer: w, Request: req}
+		
+		routeRequestStart(ctx)
+		
+		routeRequestEnd(ctx, callFunc(ctx))
 	})).ServeHTTP
 }
 
-func (r *RouteStruct) Put(path string, callFunc func(c *Context)) {
+func (r *RouteStruct) Put(path string, callFunc func(c *Context) error) {
 	putRoutes[r.perfix+path] = r.routeChain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		callFunc(&Context{Writer: w, Request: req})
+		ctx := &Context{Writer: w, Request: req}
+		
+		routeRequestStart(ctx)
+		
+		routeRequestEnd(ctx, callFunc(ctx))
 	})).ServeHTTP
 }
 
-func (r *RouteStruct) Options(path string, callFunc func(c *Context)) {
+func (r *RouteStruct) Options(path string, callFunc func(c *Context) error) {
 	optionsRoutes[r.perfix+path] = r.routeChain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		callFunc(&Context{Writer: w, Request: req})
+		ctx := &Context{Writer: w, Request: req}
+		
+		routeRequestStart(ctx)
+		
+		routeRequestEnd(ctx, callFunc(ctx))
 	})).ServeHTTP
 }
 
-func (r *RouteStruct) Head(path string, callFunc func(c *Context)) {
+func (r *RouteStruct) Head(path string, callFunc func(c *Context) error) {
 	headRoutes[r.perfix+path] = r.routeChain(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		callFunc(&Context{Writer: w, Request: req})
+		ctx := &Context{Writer: w, Request: req}
+		
+		routeRequestStart(ctx)
+		
+		routeRequestEnd(ctx, callFunc(ctx))
 	})).ServeHTTP
 }
 
-func (r *RouteStruct) Any(path string, callFunc func(c *Context)) {
+func (r *RouteStruct) Any(path string, callFunc func(c *Context) error) {
 	r.Get(path, callFunc)
 	r.Post(path, callFunc)
 	r.Patch(path, callFunc)
@@ -177,9 +242,23 @@ func (r *RouteStruct) routeChain(handler http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
+			id, ok := r.Context().Value("requestID").(string)
+
 			if err := recover(); err != nil {
 				fmt.Printf("Panic recovered: %v\n", err)
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
+				if !ok { return }
+
+				if orm, ok := GormDatabasesManager.Get(id); ok {
+					orm.Rollback()
+				}
+			} else {
+				if !ok { return }
+
+				if orm, ok := GormDatabasesManager.Get(id); ok {
+					orm.Commit()
+				}
 			}
 		}()
 
@@ -213,7 +292,7 @@ func (r *RouteStruct) routeChain(handler http.Handler) http.Handler {
 		if id == "" {
 			id = uuid.New().String()
 		}
-		ctx := context.WithValue(r.Context(), "requestId", id)
+		ctx := context.WithValue(r.Context(), "requestID", id)
 		w.Header().Set("X-Request-ID", id)
 
 		staticMaxAge, err := settings.GetStaticMaxAge()

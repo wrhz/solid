@@ -7,11 +7,13 @@ import (
 	"strconv"
 
 	"github.com/gorilla/sessions"
+	"gorm.io/gorm"
 )
 
 var serverConfig = NewServerConfig()
 var settings = NewSettingsConfig()
 var websocketConfig = NewWebSocketConfig()
+var databaseConfig = NewDatabaseConfig()
 
 type ServerConfigStruct struct {
 	host       string
@@ -223,4 +225,33 @@ func NewWebSocketConfig() *WebSocketConfigStruct {
 
 func GetWebSocketConfig() *WebSocketConfigStruct {
 	return websocketConfig
+}
+
+type DatabaseConfigStruct struct {
+	gormDialector gorm.Dialector
+	gormOptions []gorm.Option
+}
+
+func (d *DatabaseConfigStruct) SetGormDialector(dialector gorm.Dialector) {
+	d.gormDialector = dialector
+}
+
+func (d *DatabaseConfigStruct) SetGormOptions(options ...gorm.Option) {
+	d.gormOptions = append(d.gormOptions, options...)
+}
+
+func (d *DatabaseConfigStruct) GetGormDialector() gorm.Dialector {
+	return d.gormDialector
+}
+
+func (d *DatabaseConfigStruct) GetGormOptions() []gorm.Option {
+	return d.gormOptions
+}
+
+func NewDatabaseConfig() *DatabaseConfigStruct {
+	return &DatabaseConfigStruct{}
+}
+
+func GetDatabaseConfig() *DatabaseConfigStruct {
+	return databaseConfig
 }

@@ -16,8 +16,8 @@ func (h *Hello) RegisterMiddleware(r *solid.RouteStruct) {
 	
 }
 
-func (h *Hello) helloGet(c *solid.Context) {
-	solid.ReactViewResponse(c, "index", 200)
+func (h *Hello) helloGet(c *solid.Context) error {
+	return solid.HtmlViewResponse(c, "index", 200)
 }
 
 func NewHello() *Hello {
