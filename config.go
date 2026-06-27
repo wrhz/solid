@@ -24,6 +24,8 @@ type ServerConfigStruct struct {
 	tlsCertFile string
 	tlsKeyFile  string
 	tlsConfig	*tls.Config
+
+	debug bool
 }
 
 func NewServerConfig() *ServerConfigStruct {
@@ -31,6 +33,7 @@ func NewServerConfig() *ServerConfigStruct {
 		host:       "localhost",
 		port:       8000,
 		mainStruct: nil,
+		debug: true,
 	}
 }
 
@@ -80,6 +83,14 @@ func (s *ServerConfigStruct) GetTLSKeyFile() string {
 
 func (s *ServerConfigStruct) GetTLSConfig() *tls.Config {
 	return s.tlsConfig
+}
+
+func (s *ServerConfigStruct) GetDebug() bool {
+	return s.debug
+}
+
+func (s *ServerConfigStruct) SetDebug(debug bool) {
+	s.debug = debug
 }
 
 func GetServerConfig() *ServerConfigStruct {
