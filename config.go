@@ -19,7 +19,7 @@ var databaseConfig = NewDatabaseConfig()
 type ServerConfigStruct struct {
 	host       string
 	port       int
-	mainStruct SolidRoute
+	mainStruct SolidMainRoute
 
 	tlsCertFile string
 	tlsKeyFile  string
@@ -45,7 +45,7 @@ func (s *ServerConfigStruct) SetHost(host string) {
 	s.host = host
 }
 
-func (s *ServerConfigStruct) SetMainStruct(mainStruct SolidRoute) {
+func (s *ServerConfigStruct) SetMainStruct(mainStruct SolidMainRoute) {
 	s.mainStruct = mainStruct
 }
 
@@ -69,7 +69,7 @@ func (s *ServerConfigStruct) GetHost() string {
 	return s.host
 }
 
-func (s *ServerConfigStruct) GetMainStruct() SolidRoute {
+func (s *ServerConfigStruct) GetMainStruct() SolidMainRoute {
 	return s.mainStruct
 }
 

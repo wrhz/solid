@@ -25,6 +25,13 @@ type SolidRoute interface {
 	RegisterMiddleware(*RouteStruct)
 }
 
+type SolidMainRoute interface {
+	SolidRoute
+
+	ServerStart()
+	ServerEnd()
+}
+
 var getRoutes = map[string]func(w http.ResponseWriter, r *http.Request) {}
 var postRoutes = map[string]func(w http.ResponseWriter, r *http.Request) {}
 var patchRoutes = map[string]func(w http.ResponseWriter, r *http.Request) {}
