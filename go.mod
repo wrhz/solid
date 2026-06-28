@@ -1,4 +1,4 @@
-module github.com/wrhz/Solid
+module github.com/wrhz/solid
 
 go 1.25.0
 
