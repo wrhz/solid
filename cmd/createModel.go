@@ -23,7 +23,7 @@ var createModelCmd = &cobra.Command{
 
 func createModel(cmd *cobra.Command, args []string) error {
 	if orm != "gorm" && orm != "xorm" && orm != "both" {
-		return fmt.Errorf("The orm only can be gorm or xorm or both, are not " + orm)
+		return fmt.Errorf("%s", "The orm only can be gorm or xorm or both, are not " + orm)
 	}
 
 	modelName := strcase.ToCamel(args[0])
@@ -44,12 +44,13 @@ func createModel(cmd *cobra.Command, args []string) error {
 
 	tag := "`"
 
-	if orm == "gorm" || orm == "both" {
-		tag += "gorm:\"primaryKey;autoIncrement\" "
-	}
-
-	if orm == "xorm" || orm == "both" {
+	switch orm {
+	case "gorm":
+		tag += "gorm:\"primaryKey;autoIncrement\""
+	case "xorm":
 		tag += "xorm:\"'id' pk autoincr\""
+	case "both":
+		tag += "gorm:\"primaryKey;autoIncrement\" xorm:\"'id' pk autoincr\""
 	}
 
 	tag += "`"
@@ -60,7 +61,8 @@ type %s struct {
 	ID int64 %s
 
 	// Write your struct members
-}`, modelName, tag)
+}
+`, modelName, tag)
 
 	if _, err := f.Write([]byte(data)); err != nil {
 		return err
