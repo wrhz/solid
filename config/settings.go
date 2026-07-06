@@ -1,13 +1,13 @@
 package config
 
 import (
-	"github.com/wrhz/Solid"
+	"github.com/wrhz/solid/config"
 
 	"github.com/gorilla/sessions"
 )
 
 func SettingsConfig() {
-	settings := solid.GetSettingsConfig()
+	settings := config.GetSettingsConfig()
 
 	settings.SetStaticMaxAge(3600)
 

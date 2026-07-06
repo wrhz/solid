@@ -3,11 +3,11 @@ package config
 import (
 	"solid/route"
 
-    "github.com/wrhz/Solid"
+    "github.com/wrhz/solid/config"
 )
 
 func ServerConfig() {
-    server := solid.GetServerConfig()
+    server := config.GetServerConfig()
 
     server.SetPort(8000)
 

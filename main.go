@@ -14,13 +14,16 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/gorilla/mux"
-	"github.com/wrhz/Solid"
+	"github.com/wrhz/solid/database"
+
+	solidConfig "github.com/wrhz/solid/config"
+	solidRoute "github.com/wrhz/solid/route"
 )
 
-var mainStruct solid.SolidMainRoute
+var mainStruct solidRoute.SolidMainRoute
 
 func parseFlags() {
-	serverConfig := solid.GetServerConfig()
+	serverConfig := solidConfig.GetServerConfig()
 	
 	debug := flag.Bool("debug", false, "enable debug mode")
 
@@ -34,38 +37,40 @@ func handleConfigs() {
 	config.SettingsConfig()
 	config.WebSocketConfig()
 	config.DatabaseConfig()
+
+	solidConfig.InitConfigManager()
 }
 
 func handleRoutes(serve *mux.Router) {
-	for path, callFunc := range solid.GetRoutes() {
+	for path, callFunc := range solidRoute.GetRoutes() {
 		serve.Handle(path, gziphandler.GzipHandler(http.HandlerFunc(callFunc))).Methods("GET")
 	}
 
-	for path, callFunc := range solid.PostRoutes() {
+	for path, callFunc := range solidRoute.PostRoutes() {
 		serve.Handle(path, gziphandler.GzipHandler(http.HandlerFunc(callFunc))).Methods("POST")
 	}
 
-	for path, callFunc := range solid.PatchRoutes() {
+	for path, callFunc := range solidRoute.PatchRoutes() {
 		serve.Handle(path, gziphandler.GzipHandler(http.HandlerFunc(callFunc))).Methods("PATCH")
 	}
 
-	for path, callFunc := range solid.DeleteRoutes() {
+	for path, callFunc := range solidRoute.DeleteRoutes() {
 		serve.Handle(path, gziphandler.GzipHandler(http.HandlerFunc(callFunc))).Methods("DELETE")
 	}
 
-	for path, callFunc := range solid.PutRoutes() {
+	for path, callFunc := range solidRoute.PutRoutes() {
 		serve.Handle(path, gziphandler.GzipHandler(http.HandlerFunc(callFunc))).Methods("PUT")
 	}
 
-	for path, callFunc := range solid.OptionsRoutes() {
+	for path, callFunc := range solidRoute.OptionsRoutes() {
 		serve.Handle(path, gziphandler.GzipHandler(http.HandlerFunc(callFunc))).Methods("OPTIONS")
 	}
 
-	for path, callFunc := range solid.HeadRoutes() {
+	for path, callFunc := range solidRoute.HeadRoutes() {
 		serve.Handle(path, gziphandler.GzipHandler(http.HandlerFunc(callFunc))).Methods("HEAD")
 	}
 
-	for path, callFunc := range solid.WebsocketRoutes() {
+	for path, callFunc := range solidRoute.WebsocketRoutes() {
 		serve.Handle(path, http.HandlerFunc(callFunc))
 	}
 }
@@ -91,11 +96,11 @@ func handleStatic(serve *mux.Router) {
 }
 
 func migrateModels() error {
-	if err := solid.MigrateModels(); err != nil {
+	if err := database.MigrateModels(); err != nil {
 		return err
 	}
 
-	if err := solid.SyncModels(); err != nil {
+	if err := database.SyncModels(); err != nil {
 		return err
 	}
 
@@ -105,11 +110,11 @@ func migrateModels() error {
 func serverFinish() {
 	mainStruct.ServerEnd()
 
-	if err := solid.RemoveGorm(); err != nil {
+	if err := database.RemoveGorm(); err != nil {
 		fmt.Printf("Remove GORM error: %v\n", err)
 	}
 
-	if err := solid.RemoveXorm(); err != nil {
+	if err := database.RemoveXorm(); err != nil {
 		fmt.Printf("Remove XORM error: %v\n", err)
 	}
 }
@@ -119,15 +124,15 @@ func main() {
 
 	handleConfigs()
 
-	serverConfig := solid.GetServerConfig()
+	serverConfig := solidConfig.GetServerConfig()
 
 	debug := serverConfig.GetDebug()
 
 	serve := mux.NewRouter()
 
-	route := solid.NewRoute()
+	route := solidRoute.NewRoute()
 
-	mainStruct := serverConfig.GetMainStruct()
+	mainStruct = serverConfig.GetMainStruct()
 
 	mainStruct.Init(route)
 
@@ -139,14 +144,14 @@ func main() {
 
 	handleStatic(serve)
 
-	err := solid.InitGorm()
+	err := database.InitGorm()
 
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	err = solid.InitXorm()
+	err = database.InitXorm()
 
 	if err != nil {
 		fmt.Println(err)
@@ -162,26 +167,26 @@ func main() {
 
 	fmt.Println("Server starting on port:", serverConfig.GetPort())
 
-	server := &http.Server{
+	httpServer := &http.Server{
 		Addr:    ":" + strconv.Itoa(serverConfig.GetPort()),
 		Handler: serve,
 	}
 
-	if tlsConfig := solid.GetServerConfig().GetTLSConfig(); tlsConfig != nil {
-		server.TLSConfig = tlsConfig
+	if tlsConfig := solidConfig.GetServerConfig().GetTLSConfig(); tlsConfig != nil {
+		httpServer.TLSConfig = tlsConfig
 	}
 
 	go func ()  {
 		mainStruct.ServerStart()
 
-		if certFile := solid.GetServerConfig().GetTLSCertFile(); certFile != "" {
-			keyFile := solid.GetServerConfig().GetTLSKeyFile()
+		if certFile := solidConfig.GetServerConfig().GetTLSCertFile(); certFile != "" {
+			keyFile := solidConfig.GetServerConfig().GetTLSKeyFile()
 
-			if err := server.ListenAndServeTLS("./certs/" + certFile, "./certs/" + keyFile); err != nil {
+			if err := httpServer.ListenAndServeTLS("./certs/" + certFile, "./certs/" + keyFile); err != nil {
 				fmt.Println("Server failed:", err)
 			}
 		} else {
-			if err := server.ListenAndServe(); err != nil {
+			if err := httpServer.ListenAndServe(); err != nil {
 				fmt.Println("Server failed:", err)
 			}
 		}
@@ -194,11 +199,11 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	if err := server.Shutdown(ctx); err != nil {
+	serverFinish()
+
+	if err := httpServer.Shutdown(ctx); err != nil {
 		fmt.Printf("Server close timeout or error: %v\n", err)
 	} else {
 		fmt.Println("Server closed")
 	}
-
-	serverFinish()
 }

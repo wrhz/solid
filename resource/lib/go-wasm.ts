@@ -1,10 +1,22 @@
-const wasi = {
-  fd_write: () => {},
-  environ_sizes_get: () => {},
-};
+import Go from "./wasm_exec.js"
 
-WebAssembly.instantiateStreaming(fetch('main.wasm'), { wasi_snapshot_preview1: wasi })
-  .then(result => {
-    const exports = result.instance.exports;
-    console.log(exports.add(3, 4));
-});
+class GoModule {
+    private go: Go = new Go()
+
+    constructor (module: string) {
+        this.go.argv = [module]
+        
+        WebAssembly.instantiateStreaming(fetch("/resource/wasm/" + module + ".wasm"), this.go.importObject)
+            .then((result: WebAssembly.WebAssemblyInstantiatedSource) => {
+                this.go.run(result.instance)
+            });
+    }
+}
+
+async function load(module: string): Promise<GoModule> {
+    return new GoModule(module)
+}
+
+export {
+    load
+}
