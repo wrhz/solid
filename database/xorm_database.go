@@ -1,9 +1,11 @@
-package solid
+package database
 
 import (
 	"sync"
 
 	"xorm.io/xorm"
+
+	solidManager "github.com/wrhz/solid/manager"
 )
 
 var xormEngine *xorm.Engine
@@ -48,7 +50,7 @@ func (g *XormSessionsManagerStruct) Delete(requestID string) {
 }
 
 func InitXorm() error {
-	databaseConfig := GetDatabaseConfig()
+	databaseConfig := solidManager.GetDatabaseConfig()
 
 	xormDriverName := databaseConfig.GetXormDriverName()
 	xormDataSourceName := databaseConfig.GetXormDataSourceName()
@@ -79,7 +81,7 @@ func RemoveXorm() error {
 
 func SyncModels() error {
 	if IsStartXorm() {
-		databaseConfig := GetDatabaseConfig()
+		databaseConfig := solidManager.GetDatabaseConfig()
 
 		return xormEngine.Sync2(databaseConfig.GetXormModels()...)
 	}

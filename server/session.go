@@ -1,9 +1,11 @@
-package solid
+package server
 
 import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
+
+	solidManager "github.com/wrhz/solid/manager"
 )
 
 type Session struct {
@@ -23,7 +25,9 @@ type SessionOptions struct {
 }
 
 func (c *Context) Session(name string, options *SessionOptions) (*Session, error) {
-	session, err := settings.GetSessionStore().Get(c.Request, name)
+	settingsConfig := solidManager.GetSettingsConfig()
+
+	session, err := settingsConfig.GetSessionStore().Get(c.Request, name)
 	if err != nil {
 		return nil, err
 	}

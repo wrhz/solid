@@ -1,9 +1,11 @@
-package solid
+package database
 
 import (
 	"sync"
 
 	"gorm.io/gorm"
+
+	solidManager "github.com/wrhz/solid/manager"
 )
 
 var gormDatabase *gorm.DB
@@ -32,7 +34,7 @@ func (g *GormDatabasesManagerStruct) Delete(requestID string) {
 }
 
 func InitGorm() error {
-	databaseConfig := GetDatabaseConfig()
+	databaseConfig := solidManager.GetDatabaseConfig()
 
 	gormDialector := databaseConfig.GetGormDialector()
 
@@ -64,7 +66,7 @@ func RemoveGorm() error {
 
 func MigrateModels() error {
 	if IsStartGorm() {
-		databaseConfig := GetDatabaseConfig()
+		databaseConfig := solidManager.GetDatabaseConfig()
 
 		return gormDatabase.AutoMigrate(databaseConfig.GetGormModels()...)
 	}

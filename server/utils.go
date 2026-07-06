@@ -1,4 +1,4 @@
-package solid
+package server
 
 import "github.com/goccy/go-reflect"
 

@@ -1,4 +1,4 @@
-package solid
+package server
 
 import (
 	"encoding/xml"
@@ -10,7 +10,7 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 )
 
-func StringResponse(c *Context, s string, status int) error {
+func (c *Context) StringResponse(s string, status int) error {
 	c.Writer.Header().Set("Content-Type", "text/plain")
 	c.Writer.WriteHeader(status)
 
@@ -19,7 +19,7 @@ func StringResponse(c *Context, s string, status int) error {
 	return nil
 }
 
-func BytesResponse(c *Context, data []byte, status int) error {
+func (c *Context) BytesResponse(data []byte, status int) error {
 	c.Writer.Header().Set("Content-Type", "application/octet-stream")
 	c.Writer.WriteHeader(status)
 
@@ -28,7 +28,7 @@ func BytesResponse(c *Context, data []byte, status int) error {
 	return nil
 }
 
-func JsonResponse(c *Context, data any, status int) error {
+func (c *Context) JsonResponse(data any, status int) error {
 	var jsonData = gjson.New(data).MustToJsonString()
 
 	c.Writer.Header().Set("Content-Type", "application/json")
@@ -39,7 +39,7 @@ func JsonResponse(c *Context, data any, status int) error {
 	return nil
 }
 
-func HtmlResponse(c *Context, html string, status int) error {
+func (c *Context) HtmlResponse(html string, status int) error {
 	c.Writer.Header().Set("Content-Type", "text/html")
 	c.Writer.WriteHeader(status)
 
@@ -48,7 +48,7 @@ func HtmlResponse(c *Context, html string, status int) error {
 	return nil
 }
 
-func HtmlViewResponse(c *Context, file string, status int) error {
+func (c *Context) HtmlViewResponse(file string, status int) error {
 	var html, err = os.ReadFile(filepath.Join(".", "resource", "view", file + ".html"))
 	if err != nil {
 		c.Writer.WriteHeader(http.StatusInternalServerError)
@@ -63,7 +63,7 @@ func HtmlViewResponse(c *Context, file string, status int) error {
 	return nil
 }
 
-func VueViewResponse(c *Context, group string, status int) error {
+func (c *Context) VueViewResponse(group string, status int) error {
 	var html, err = os.ReadFile(filepath.Join(".", "resource", "vue", group, group + ".html"))
 	if err != nil {
 		c.Writer.WriteHeader(http.StatusInternalServerError)
@@ -79,7 +79,7 @@ func VueViewResponse(c *Context, group string, status int) error {
 	return nil
 }
 
-func ReactViewResponse(c *Context, group string, status int) error {
+func (c *Context) ReactViewResponse(group string, status int) error {
 	var html, err = os.ReadFile(filepath.Join(".", "resource", "react", group, group + ".html"))
 	if err != nil {
 		c.Writer.WriteHeader(http.StatusInternalServerError)
@@ -95,7 +95,7 @@ func ReactViewResponse(c *Context, group string, status int) error {
 	return nil
 }
 
-func XmlResponse(c *Context, data any, status int) error {
+func (c *Context) XmlResponse(data any, status int) error {
 	var xmlData, err = xml.Marshal(data)
 
 	if err != nil {
@@ -112,7 +112,7 @@ func XmlResponse(c *Context, data any, status int) error {
 	return nil
 }
 
-func (c *Context) Redirect(url string, status int) error {
+func (c *Context)  Redirect(url string, status int) error {
 	http.Redirect(c.Writer, c.Request, url, status)
 
 	return nil
@@ -155,7 +155,7 @@ func (c *Context) Error(status int, err error) error {
 func (c *Context) JSONError(status int, err error) error {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	
-	JsonResponse(c, map[string]error{ "error": err }, status)
+	c.JsonResponse(map[string]error{ "error": err }, status)
 
 	return nil
 }
