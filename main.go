@@ -4,7 +4,7 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 */
 package main
 
-import "github.com/wrhz/Solid-cli/cmd"
+import "github.com/wrhz/solid-cli/cmd"
 
 func main() {
 	cmd.Execute()

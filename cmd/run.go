@@ -13,18 +13,12 @@ import (
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "It can run your solid project and start the debug",
-	Run: runServer,
+	RunE: runServer,
 }
 
-func runServer(cmd *cobra.Command, args []string) {
-	viteCmd := exec.Command("npm", "run", "build")
-
-	viteCmd.Stdout = os.Stdout
-	viteCmd.Stderr = os.Stderr
-
-	err := viteCmd.Run()
-	if err != nil {
-		os.Exit(1)
+func runServer(cmd *cobra.Command, args []string) error {
+	if err := npmBuild(); err != nil {
+		return err
 	}
 
 	appCmd := exec.Command("go", "run", ".", "--debug")
@@ -32,10 +26,12 @@ func runServer(cmd *cobra.Command, args []string) {
 	appCmd.Stdout = os.Stdout
 	appCmd.Stderr = os.Stderr
 
-	err = appCmd.Run()
+	err := appCmd.Run()
 	if err != nil {
-		os.Exit(1)
+		return err
 	}
+
+	return nil
 }
 
 func init() {
