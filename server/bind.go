@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/goccy/go-json"
@@ -40,6 +41,15 @@ func parseType (value string, targetType reflect.Kind) (any, error) {
 	return r, err
 }
 
+func lowerFirst(s string) string {
+    if s == "" {
+        return s
+    }
+    r := []rune(s)
+    r[0] = unicode.ToLower(r[0])
+    return string(r)
+}
+
 func (c *Context) BindQuery(s any) error {
 	v := reflect.ValueOf(s)
 
@@ -55,38 +65,40 @@ func (c *Context) BindQuery(s any) error {
 		field := v.Type().Field(i)
 		pathTag := field.Tag.Get("path")
 
-		if pathTag != "" {
-			paramValue := c.Request.URL.Query()[pathTag]
+		if pathTag == "" {
+			pathTag = lowerFirst(field.Name)
+		}
 
-			paramType := field.Type.Kind()
+		paramValue := c.Request.URL.Query()[pathTag]
 
-			if paramType != reflect.Slice {
-				if len(paramValue) == 0 {
-					continue
-				}
-				
-				data, err := parseType(paramValue[0], paramType)
+		paramType := field.Type.Kind()
 
-				if err != nil {
-					return fmt.Errorf("parse field %q as %v: %w", pathTag, paramType, err)
-				}
-
-				v.Field(i).Set(reflect.ValueOf(data))
-			} else {
-				elementType := field.Type.Elem().Kind()
-
-				sliceValue := reflect.MakeSlice(field.Type, 0, len(paramValue))
-
-				for _, valStr := range paramValue {
-					elemValue, err := parseType(valStr, elementType)
-					if err != nil {
-						return fmt.Errorf("parse slice element %q as %v: %w", valStr, elementType, err)
-					}
-					sliceValue = reflect.Append(sliceValue, reflect.ValueOf(elemValue))
-				}
-
-				v.Field(i).Set(sliceValue)
+		if paramType != reflect.Slice {
+			if len(paramValue) == 0 {
+				continue
 			}
+			
+			data, err := parseType(paramValue[0], paramType)
+
+			if err != nil {
+				return fmt.Errorf("parse field %q as %v: %w", pathTag, paramType, err)
+			}
+
+			v.Field(i).Set(reflect.ValueOf(data))
+		} else {
+			elementType := field.Type.Elem().Kind()
+
+			sliceValue := reflect.MakeSlice(field.Type, 0, len(paramValue))
+
+			for _, valStr := range paramValue {
+				elemValue, err := parseType(valStr, elementType)
+				if err != nil {
+					return fmt.Errorf("parse slice element %q as %v: %w", valStr, elementType, err)
+				}
+				sliceValue = reflect.Append(sliceValue, reflect.ValueOf(elemValue))
+			}
+
+			v.Field(i).Set(sliceValue)
 		}
 	}
 	return nil
@@ -107,21 +119,23 @@ func (c *Context) BindParams(s any) error {
 
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Type().Field(i)
-		pramTag := field.Tag.Get("param")
+		paramTag := field.Tag.Get("param")
 
-		if pramTag != "" {
-			data := params[pramTag]
-
-			paramType := field.Type.Kind()
-
-			value, err := parseType(data, paramType)
-
-			if err != nil {
-				return fmt.Errorf("parse field %q as %v: %w", pramTag, paramType, err)
-			}
-
-			v.Field(i).Set(reflect.ValueOf(value))
+		if paramTag == "" {
+			paramTag = lowerFirst(field.Name)
 		}
+
+		data := params[paramTag]
+
+		paramType := field.Type.Kind()
+
+		value, err := parseType(data, paramType)
+
+		if err != nil {
+			return fmt.Errorf("parse field %q as %v: %w", paramTag, paramType, err)
+		}
+
+		v.Field(i).Set(reflect.ValueOf(value))
 	}
 
 	return nil
@@ -146,77 +160,77 @@ func (c *Context) BindForm(s any) error {
 		field := v.Type().Field(i)
 		formTag := field.Tag.Get("form")
 
-		if formTag != "" {
-			paramType := field.Type
+		if formTag == "" {
+			formTag = lowerFirst(field.Name)
+		}
 
+		paramType := field.Type
+
+		if paramType == reflect.TypeOf(multipart.FileHeader{}) {
+			files := c.Request.MultipartForm.File[formTag]
+
+			if len(files) == 0 {
+				continue
+			}
+
+			fh := files[0]
 			if paramType == reflect.TypeOf(multipart.FileHeader{}) {
-				files := c.Request.MultipartForm.File[formTag]
+				v.Field(i).Set(reflect.ValueOf(*fh))
+			} else if paramType == reflect.TypeOf((*multipart.FileHeader)(nil)) {
+				v.Field(i).Set(reflect.ValueOf(fh))
+			} else {
+				return errors.New("unsupported file field type")
+			}
+		} else if paramType == reflect.TypeOf([]multipart.FileHeader{}) {
+			files := c.Request.MultipartForm.File[formTag]
 
-				if len(files) == 0 {
-					continue
-				}
+			sliceValue := reflect.MakeSlice(paramType, 0, len(files))
 
-				fh := files[0]
-				if paramType == reflect.TypeOf(multipart.FileHeader{}) {
-					v.Field(i).Set(reflect.ValueOf(*fh))
-				} else if paramType == reflect.TypeOf((*multipart.FileHeader)(nil)) {
-					v.Field(i).Set(reflect.ValueOf(fh))
+			for _, fh := range files {
+				if paramType.Elem() == reflect.TypeOf(multipart.FileHeader{}) {
+					sliceValue = reflect.Append(sliceValue, reflect.ValueOf(*fh))
+				} else if paramType.Elem() == reflect.TypeOf((*multipart.FileHeader)(nil)) {
+					sliceValue = reflect.Append(sliceValue, reflect.ValueOf(fh))
 				} else {
-					return errors.New("unsupported file field type")
+					return errors.New("unsupported file slice field type")
 				}
-			} else if paramType == reflect.TypeOf([]multipart.FileHeader{}) {
-				files := c.Request.MultipartForm.File[formTag]
+			}
 
-				sliceValue := reflect.MakeSlice(paramType, 0, len(files))
+			v.Field(i).Set(sliceValue)
+		} else {
+			data := c.Request.Form[formTag]
+			paramTypeKind := paramType.Kind()
 
-				for _, fh := range files {
-					if paramType.Elem() == reflect.TypeOf(multipart.FileHeader{}) {
-						sliceValue = reflect.Append(sliceValue, reflect.ValueOf(*fh))
-					} else if paramType.Elem() == reflect.TypeOf((*multipart.FileHeader)(nil)) {
-						sliceValue = reflect.Append(sliceValue, reflect.ValueOf(fh))
-					} else {
-						return errors.New("unsupported file slice field type")
+			if paramTypeKind == reflect.Slice {
+				elementType := field.Type.Elem().Kind()
+
+				sliceValue := reflect.MakeSlice(field.Type, 0, len(data))
+
+				for _, valStr := range data {
+					
+					elemValue, err := parseType(valStr, elementType)
+
+					if err != nil {
+						return fmt.Errorf("parse slice element %q as %v: %w", valStr, elementType, err)
 					}
+
+					sliceValue = reflect.Append(sliceValue, reflect.ValueOf(elemValue))
 				}
 
 				v.Field(i).Set(sliceValue)
 			} else {
-				data := c.Request.Form[formTag]
-				paramTypeKind := paramType.Kind()
-
-				if paramTypeKind == reflect.Slice {
-					elementType := field.Type.Elem().Kind()
-
-					sliceValue := reflect.MakeSlice(field.Type, 0, len(data))
-
-					for _, valStr := range data {
-						
-						elemValue, err := parseType(valStr, elementType)
-
-						if err != nil {
-							return fmt.Errorf("parse slice element %q as %v: %w", valStr, elementType, err)
-						}
-
-						sliceValue = reflect.Append(sliceValue, reflect.ValueOf(elemValue))
-					}
-
-					v.Field(i).Set(sliceValue)
-				} else {
-					if len(data) == 0 {
-						continue
-					}
-
-					value, err := parseType(data[0], paramTypeKind)
-
-					if err != nil {
-						return fmt.Errorf("parse field %q as %v: %w", formTag, paramType, err)
-					}
-
-					v.Field(i).Set(reflect.ValueOf(value))
+				if len(data) == 0 {
+					continue
 				}
+
+				value, err := parseType(data[0], paramTypeKind)
+
+				if err != nil {
+					return fmt.Errorf("parse field %q as %v: %w", formTag, paramType, err)
+				}
+
+				v.Field(i).Set(reflect.ValueOf(value))
 			}
-		} else {
-			return fmt.Errorf("field %q does not have form tag", field.Name)
 		}
 	}
 
@@ -278,20 +292,22 @@ func (c *Context) BindCookie(s any) error {
 		field := v.Type().Field(i)
 		cookieTag := field.Tag.Get("cookie")
 
-		if cookieTag != "" {
-			cookie, _, err := c.GetCookie(cookieTag)
+		if cookieTag == "" {
+			cookieTag = lowerFirst(field.Name)
+		}
+
+		cookie, _, err := c.GetCookie(cookieTag)
+		if err != nil {
+			return fmt.Errorf("failed to get cookie %q: %w", cookieTag, err)
+		}
+
+		if cookie != nil {
+			value, err := parseType(cookie.Value, field.Type.Kind())
 			if err != nil {
-				return fmt.Errorf("failed to get cookie %q: %w", cookieTag, err)
+				return fmt.Errorf("failed to parse cookie %q: %w", cookieTag, err)
 			}
 
-			if cookie != nil {
-				value, err := parseType(cookie.Value, field.Type.Kind())
-				if err != nil {
-					return fmt.Errorf("failed to parse cookie %q: %w", cookieTag, err)
-				}
-
-				v.Field(i).Set(reflect.ValueOf(value))
-			}
+			v.Field(i).Set(reflect.ValueOf(value))
 		}
 	}
 
@@ -318,9 +334,11 @@ func (c *Context) BindSession(s any, name string) error {
 		field := v.Type().Field(i)
 		sessionTag := field.Tag.Get("session")
 
-		if sessionTag != "" {
-			v.Field(i).Set(reflect.ValueOf(session.Get(sessionTag)))
+		if sessionTag == "" {
+			sessionTag = lowerFirst(field.Name)
 		}
+
+		v.Field(i).Set(reflect.ValueOf(session.Get(sessionTag)))
 	}
 
 	return nil
