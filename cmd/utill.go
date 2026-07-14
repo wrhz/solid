@@ -76,3 +76,63 @@ func readWasmExecJS() ([]byte, error) {
 	}
 	return os.ReadFile(path)
 }
+
+func isDir(path string) (bool, error) {
+    info, err := os.Stat(path)
+    if err != nil {
+        if os.IsNotExist(err) {
+            return false, nil
+        }
+        return false, err
+    }
+    return info.IsDir(), nil
+}
+
+func exportWasm() error {
+	wasmDirPath := filepath.Join("resource", "wasm")
+
+	is, err := isDir("./" + wasmDirPath)
+
+	if err != nil {
+		return err
+	}
+
+	if is {
+		data, err := readWasmExecJS()
+
+		if err != nil {
+			return err
+		}
+
+		data = append(data, "\nexport default Go;"...)
+
+		if err = os.WriteFile(filepath.Join("resource", "lib", "wasm_exec.js"), data, 0644); err != nil {
+			return err
+		}
+
+		dirs, err := getDirs()
+
+		if err != nil {
+			return err
+		}
+
+		for _, dir := range dirs {
+			var buildCmd *exec.Cmd
+
+			inputPath := "./" + filepath.Join(wasmDirPath, dir.inputDir)
+			outputPath := filepath.Join(".", "dist", "resource", "wasm", dir.outputDir)
+
+			buildCmd = exec.Command("go", "build", "-o", outputPath, inputPath)
+
+			buildCmd.Stdout = os.Stdout
+			buildCmd.Stderr = os.Stderr
+			buildCmd.Env = append(os.Environ(), "GOOS=js", "GOARCH=wasm")
+
+			if err := buildCmd.Run(); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
