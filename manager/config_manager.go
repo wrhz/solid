@@ -8,13 +8,19 @@ type ConfigManager struct {
 	settingsConfig  types.ISettingsConfig
 	websocketConfig types.IWebSocketConfig
 	databaseConfig  types.IDatabaseConfig
+	templateConfig  types.ITemplateConfig
 }
 
-func NewConfigManager(settingsConfig types.ISettingsConfig, websocketConfig types.IWebSocketConfig, databaseConfig types.IDatabaseConfig) {
+func NewConfigManager(settingsConfig types.ISettingsConfig,
+	websocketConfig types.IWebSocketConfig,
+	databaseConfig types.IDatabaseConfig,
+	templateConfig types.ITemplateConfig,
+) {
 	configManager = &ConfigManager{
 		settingsConfig:  settingsConfig,
 		websocketConfig: websocketConfig,
 		databaseConfig:  databaseConfig,
+		templateConfig: templateConfig,
 	}
 }
 
@@ -28,4 +34,8 @@ func GetWebSocketConfig() types.IWebSocketConfig {
 
 func GetDatabaseConfig() types.IDatabaseConfig {
 	return configManager.databaseConfig
+}
+
+func GetTemplateConfig() types.ITemplateConfig {
+	return configManager.templateConfig
 }

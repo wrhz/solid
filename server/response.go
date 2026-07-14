@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/gogf/gf/v2/encoding/gjson"
+
+	solidManager "github.com/wrhz/solid/manager"
 )
 
 func (c *Context) StringResponse(s string, status int) error {
@@ -48,8 +50,8 @@ func (c *Context) HtmlResponse(html string, status int) error {
 	return nil
 }
 
-func (c *Context) HtmlViewResponse(file string, status int) error {
-	var html, err = os.ReadFile(filepath.Join(".", "resource", "view", file + ".html"))
+func (c *Context) HtmlViewResponse(name string, file string, status int, args any) error {
+	var html, err = os.ReadFile(filepath.Join(".", "resource", "view", file))
 	if err != nil {
 		c.Writer.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(c.Writer, "Failed to read html file: %s", err)
@@ -58,7 +60,7 @@ func (c *Context) HtmlViewResponse(file string, status int) error {
 	c.Writer.Header().Set("Content-Type", "text/html")
 	c.Writer.WriteHeader(status)
 
-	fmt.Fprintf(c.Writer, "%s", html)
+	solidManager.GetTemplateConfig().GetTemplateRender()(c.Writer, name, string(html), args)
 
 	return nil
 }

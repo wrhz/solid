@@ -6,6 +6,7 @@ var serverConfig = NewServerConfig()
 var settingsConfig = NewSettingsConfig()
 var websocketConfig = NewWebSocketConfig()
 var databaseConfig = NewDatabaseConfig()
+var templateConfig = NewTemplateConfigStruct()
 
 func GetServerConfig() *ServerConfigStruct {
 	return serverConfig
@@ -23,6 +24,15 @@ func GetDatabaseConfig() *DatabaseConfigStruct {
 	return databaseConfig
 }
 
+func GetTemplateConfig() *TemplateConfigStruct {
+	return templateConfig
+}
+
 func InitConfigManager() {
-	solidManager.NewConfigManager(settingsConfig, websocketConfig, databaseConfig)
+	solidManager.NewConfigManager(
+		settingsConfig,
+		websocketConfig,
+		databaseConfig,
+		templateConfig,
+	)
 }
