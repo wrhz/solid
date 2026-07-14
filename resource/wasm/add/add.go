@@ -22,6 +22,10 @@ func (s *Struct) SayInfo(this js.Value, args []js.Value) {
 	fmt.Printf("Name: %s Age: %d\n", s.Name, s.Age)
 }
 
+func (s *Struct) Constructor(this js.Value, args []js.Value) {
+	fmt.Println("The Struct runs constructor")
+}
+
 func add(this js.Value, args []js.Value) any {
 	a := args[0].Int()
 	b := args[1].Int()
