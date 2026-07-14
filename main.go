@@ -132,11 +132,13 @@ func main() {
 
 	route := solidRoute.NewRoute()
 
+	middleware := solidRoute.NewMiddleware(route.GetMiddlewares())
+
 	mainStruct = serverConfig.GetMainStruct()
 
 	mainStruct.Init(route)
 
-	mainStruct.RegisterMiddleware(route)
+	mainStruct.RegisterMiddleware(middleware)
 
 	mainStruct.RegisterRoute(route)
 

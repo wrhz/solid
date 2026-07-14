@@ -19,7 +19,8 @@ func (h *Hello) RegisterRoute(r *solidRoute.RouteStruct) {
 	r.Get("/hello", h.helloGet)
 }
 
-func (h *Hello) RegisterMiddleware(r *solidRoute.RouteStruct) {
+func (h *Hello) RegisterMiddleware(m *solidRoute.MiddlewareStruct) {
+	
 }
 
 func (h *Hello) ServerStart() {
@@ -31,8 +32,5 @@ func (h *Hello) ServerEnd() {
 }
 
 func (h *Hello) helloGet(c *server.Context) error {
-	return c.HtmlViewResponse("index", "index.html", 200, map[string]any{
-		"Name": "Tom",
-		"Age": 13,
-	})
+	return c.StringResponse("Hello Solid", 200)
 }
