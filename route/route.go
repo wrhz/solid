@@ -9,16 +9,23 @@ import (
 	"github.com/wrhz/solid/server"
 )
 
+type RouteFunc func(c *server.Context) error
+type MiddleWareFunc func(c *server.Context, next http.HandlerFunc)
+
 type RouteStruct struct {
 	perfix      string
 	middlewares []func(http.Handler) http.Handler
+}
+
+type MiddlewareStruct struct {
+	middlewares *[]func(http.Handler) http.Handler
 }
 
 type SolidRoute interface {
 	Init(*RouteStruct)
 
 	RegisterRoute(*RouteStruct)
-	RegisterMiddleware(*RouteStruct)
+	RegisterMiddleware(*MiddlewareStruct)
 }
 
 type SolidMainRoute interface {
@@ -28,7 +35,7 @@ type SolidMainRoute interface {
 	ServerEnd()
 }
 
-func routeFuncHandle(callFunc func(c *server.Context) error) http.HandlerFunc {
+func routeFuncHandle(callFunc RouteFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := &server.Context{Writer: w, Request: req}
 
@@ -111,11 +118,19 @@ func routeRequestEnd(ctx *server.Context, err error) {
 	}
 }
 
-func NewRoute() *RouteStruct {
-	return &RouteStruct{perfix: ""}
+func (r *RouteStruct) GetMiddlewares() *[]func(http.Handler) http.Handler {
+	return &r.middlewares
 }
 
-func (r *RouteStruct) Any(path string, callFunc func(c *server.Context) error) {
+func NewRoute() *RouteStruct {
+	return &RouteStruct{ perfix: "", middlewares: []func(http.Handler) http.Handler{} }
+}
+
+func NewMiddleware(middlewares *[]func(http.Handler) http.Handler) *MiddlewareStruct {
+	return &MiddlewareStruct{ middlewares: middlewares }
+}
+
+func (r *RouteStruct) Any(path string, callFunc RouteFunc) {
 	r.Get(path, callFunc)
 	r.Post(path, callFunc)
 	r.Patch(path, callFunc)
@@ -126,14 +141,16 @@ func (r *RouteStruct) Any(path string, callFunc func(c *server.Context) error) {
 }
 
 func (r *RouteStruct) Group(prefix string, callStruct SolidRoute) {
-	route := &RouteStruct{perfix: r.perfix + prefix, middlewares: r.middlewares}
+	route := &RouteStruct{ perfix: r.perfix + prefix, middlewares: r.middlewares }
+	middleware := &MiddlewareStruct{ middlewares: &route.middlewares }
+
 	callStruct.Init(route)
-	callStruct.RegisterMiddleware(route)
+	callStruct.RegisterMiddleware(middleware)
 	callStruct.RegisterRoute(route)
 }
 
-func (r *RouteStruct) Use(middleware func(c *server.Context, next http.HandlerFunc)) {
-	r.middlewares = append(r.middlewares, func(next http.Handler) http.Handler {
+func (r *MiddlewareStruct) Use(middleware MiddleWareFunc) {
+	*r.middlewares = append(*r.middlewares, func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			middleware(&server.Context{Writer: w, Request: r}, next.ServeHTTP)
 		})
