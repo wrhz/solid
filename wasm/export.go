@@ -53,6 +53,26 @@ func getGoExports() js.Value {
 	return goExports
 }
 
+func getType(dataType reflect.Type) reflect.Type {
+	if dataType.Kind() == ptrKind {
+		for dataType.Kind() == ptrKind {
+			dataType = dataType.Elem()
+		}
+	}
+
+	return dataType
+}
+
+func getValue(dataValue reflect.Value) reflect.Value {
+	if dataValue.Kind() == ptrKind {
+		for dataValue.Kind() == ptrKind {
+			dataValue = dataValue.Elem()
+		}
+	}
+
+	return dataValue
+}
+
 func createValueMethod(method reflect.Value) js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) any {
 		results := method.Call([]reflect.Value{
@@ -88,36 +108,13 @@ func createPrototypeMethod(method reflect.Method) js.Func {
 }
 
 func createClass(classValue reflect.Value) (js.Func, error) {
-	classType := classValue.Type()
-
-	if classType.Kind() == ptrKind {
-		for classType.Kind() == ptrKind {
-			classType =classType.Elem()
-		}
-	}
+	classType := getType(classValue.Type())
 
 	if classType.Kind() != reflect.Struct { return js.FuncOf(func(this js.Value, args []js.Value) any { return nil }), fmt.Errorf("The class type should be a struct") }
 
-	for classValue.Kind() == ptrKind {
-		classValue = classValue.Elem()
-	}
+	classValue = getValue(classValue)
 
 	if classValue.Kind() != reflect.Struct { return js.FuncOf(func(this js.Value, args []js.Value) any { return nil }), fmt.Errorf("The class value should be a struct") }
-
-	structType := classType
-
-	type fieldInfo struct {
-        index int
-        name  string
-    }
-    var fields []fieldInfo
-    for i := 0; i < structType.NumField(); i++ {
-        tag := structType.Field(i).Tag.Get("wasm")
-        if tag == "" {
-            tag = lowerFirst(structType.Field(i).Name)
-        }
-        fields = append(fields, fieldInfo{index: i, name: tag})
-    }
 
 	prototypeMethods := map[string]any{}
 	valueMethods := map[string]any{}
@@ -148,18 +145,31 @@ func createClass(classValue reflect.Value) (js.Func, error) {
 	}
 
 	constructor := js.FuncOf(func(this js.Value, args []js.Value) any {
-		newPtr := reflect.New(structType)
+		newPtr := reflect.New(classType)
         newStruct := newPtr.Elem()
 
-		for _, f := range fields {
-            if newStruct.Field(f.index).CanSet() {
-                newStruct.Field(f.index).Set(classValue.Field(f.index))
-            }
-        }
+		for i := 0; i < classType.NumField(); i++ {
+			field := classType.Field(i)
+			tag := field.Tag.Get("wasm")
 
-        for _, f := range fields {
-            this.Set(f.name, js.ValueOf(newStruct.Field(f.index).Interface()))
-        }
+			if tag == "" {
+				tag = lowerFirst(classType.Field(i).Name)
+			}
+
+			fieldKind := getType(field.Type)
+
+			if fieldKind.Kind() == reflect.Struct {
+				data, err := createClass(classValue.Field(i))
+
+				if err != nil {
+					return err
+				}
+
+				this.Set(tag, data)
+			} else {
+				this.Set(tag, js.ValueOf(newStruct.Field(i).Interface()))
+			}
+		}
 
 		id := atomic.AddUint64(&instanceIDSeq, 1)
 		instanceMap[id] = newPtr.Interface()
