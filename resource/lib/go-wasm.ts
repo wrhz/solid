@@ -1,38 +1,23 @@
 import Go from "./wasm_exec.js"
 
-class GoModule {
-    private go: Go = new Go()
-    private module: string
+const go = new Go();
 
-    constructor (module: string) {
-        if ((window as any).go_exports == undefined) {
-            (window as any).go_exports = new Map<string, any>
-        }
-
-        this.go.argv = [module]
-        this.module = module
-        
-        WebAssembly.instantiateStreaming(fetch("/resource/wasm/" + module + ".wasm"), this.go.importObject)
-            .then((result: WebAssembly.WebAssemblyInstantiatedSource) => {
-                this.go.run(result.instance);
-                console.log("The " + module + " initialized");
-            });
+async function load(module: string): Promise<any> {
+    if ((window as any).goExports == undefined) {
+        (window as any).goExports = {}
     }
 
-    async call(name: string, ...args: any): Promise<any> {
-        while (!(window as any).go_exports.has(this.module)) {
-            await new Promise((resolve) => setTimeout(resolve, 10));
-        }
+    go.argv = [module];
+    
+    const result = await WebAssembly.instantiateStreaming(fetch("/resource/wasm/" + module + ".wasm"), go.importObject)
+    
+    go.run(result.instance);
+    
+    console.log("The " + module + " initialized");
 
-        return (window as any).go_exports.get(this.module).get(name)(...args)
-    }
-}
-
-async function load(module: string): Promise<GoModule> {
-    return new GoModule(module)
+    return (window as any).goExports[module]
 }
 
 export {
-    load,
-    GoModule
+    load
 }
