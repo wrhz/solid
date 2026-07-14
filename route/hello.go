@@ -31,5 +31,8 @@ func (h *Hello) ServerEnd() {
 }
 
 func (h *Hello) helloGet(c *server.Context) error {
-	return c.HtmlViewResponse("index", 200)
+	return c.HtmlViewResponse("index", "index.html", 200, map[string]any{
+		"Name": "Tom",
+		"Age": 13,
+	})
 }
