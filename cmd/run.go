@@ -41,8 +41,13 @@ func runServer(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, dir := range dirs {
-		buildCmd := exec.Command("go", "build", "-o", filepath.Join(".", "dist", "resource", "wasm", dir.outputDir), "./" + filepath.Join("resource", "wasm", dir.inputDir))
-	
+		var buildCmd *exec.Cmd
+
+		inputPath := "./" + filepath.Join("resource", "wasm", dir.inputDir)
+		outputPath := filepath.Join(".", "dist", "resource", "wasm", dir.outputDir)
+
+		buildCmd = exec.Command("go", "build", "-o", outputPath, inputPath)
+
 		buildCmd.Stdout = os.Stdout
 		buildCmd.Stderr = os.Stderr
 		buildCmd.Env = append(os.Environ(), "GOOS=js", "GOARCH=wasm")

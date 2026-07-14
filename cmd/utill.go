@@ -22,14 +22,6 @@ func npmBuild() error {
 	return nil
 }
 
-func changeExtCustom(name string, newExt string) string {
-    i := strings.LastIndex(name, ".")
-    if i == -1 {
-        return name + newExt
-    }
-    return name[:i] + newExt
-}
-
 func getDirs() ([]*WasmDir, error) {
 	rootPath := filepath.Join("resource", "wasm")
 
@@ -57,24 +49,24 @@ func getDirs() ([]*WasmDir, error) {
 }
 
 func findWasmExecJS() (string, error) {
-    goroot, err := exec.Command("go", "env", "GOROOT").Output()
-    if err != nil {
-        return "", fmt.Errorf("failed to get GOROOT: %w", err)
-    }
-    root := strings.TrimSpace(string(goroot))
+	goroot, err := exec.Command("go", "env", "GOROOT").Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get GOROOT: %w", err)
+	}
+	root := strings.TrimSpace(string(goroot))
 
-    candidates := []string{
-        filepath.Join(root, "lib", "wasm", "wasm_exec.js"),
-        filepath.Join(root, "misc", "wasm", "wasm_exec.js"),
-    }
+	candidates := []string{
+		filepath.Join(root, "lib", "wasm", "wasm_exec.js"),
+		filepath.Join(root, "misc", "wasm", "wasm_exec.js"),
+	}
 
-    for _, p := range candidates {
-        if _, err := os.Stat(p); err == nil {
-            return p, nil
-        }
-    }
+	for _, p := range candidates {
+		if _, err := os.Stat(p); err == nil {
+			return p, nil
+		}
+	}
 
-    return "", fmt.Errorf("wasm_exec.js not found in GOROOT (%s)", root)
+	return "", fmt.Errorf("wasm_exec.js not found in GOROOT (%s)", root)
 }
 
 func readWasmExecJS() ([]byte, error) {
