@@ -8,8 +8,10 @@ import { load } from "@/go-wasm.js"
     console.log(add.message);
 
     const struct = new add.Struct();
+    
+    struct.sayInfo();
 
     add.Struct.sayHello();
 
-    struct.sayInfo();
+    const child = new struct.Child();
 })()

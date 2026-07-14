@@ -9,7 +9,12 @@ import (
 
 var message = "Hello World"
 
+type Child struct {
+	City string `wasm:"city"`
+}
+
 type Struct struct {
+	ChildStruct Child `wasm:"Child"`
 	Name string `wasm:"name"`
 	Age int `wasm:"age"`
 }
