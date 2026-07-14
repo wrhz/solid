@@ -53,7 +53,22 @@ func getGoExports() js.Value {
 	return goExports
 }
 
-func createClassFuncMember(method reflect.Method) js.Func {
+func createValueMethod(method reflect.Value) js.Func {
+	return js.FuncOf(func(this js.Value, args []js.Value) any {
+		results := method.Call([]reflect.Value{
+			reflect.ValueOf(this),
+			reflect.ValueOf(args),
+		})
+
+		if len(results) > 0 {
+			return results[0].Interface()
+		}
+
+		return nil
+	})
+}
+
+func createPrototypeMethod(method reflect.Method) js.Func {
 	return js.FuncOf(func(this js.Value, args []js.Value) any {
 		id := this.Get("_goId").Int()
 		structPtr := instanceMap[uint64(id)]
@@ -104,6 +119,34 @@ func createClass(classValue reflect.Value) (js.Func, error) {
         fields = append(fields, fieldInfo{index: i, name: tag})
     }
 
+	prototypeMethods := map[string]any{}
+	valueMethods := map[string]any{}
+	classTypePtr := reflect.PointerTo(classType)
+	methodNames := getValueMethodNames(classType)
+
+	var constructorFunc reflect.Value
+
+	for i := 0; i < classType.NumMethod(); i++ {
+		method := classType.Method(i)
+		bound := classValue.Method(i)
+
+		valueMethods[lowerFirst(method.Name)] = createValueMethod(bound)
+	}
+
+	for i := 0; i < classTypePtr.NumMethod(); i++ {
+		method := classTypePtr.Method(i)
+
+		if slices.Contains(methodNames, method.Name) { continue }
+
+		name := method.Name
+		
+		if name == "Constructor" {
+			constructorFunc = method.Func
+		} else {
+			prototypeMethods[lowerFirst(name)] = createPrototypeMethod(method)
+		}
+	}
+
 	constructor := js.FuncOf(func(this js.Value, args []js.Value) any {
 		newPtr := reflect.New(structType)
         newStruct := newPtr.Elem()
@@ -122,27 +165,25 @@ func createClass(classValue reflect.Value) (js.Func, error) {
 		instanceMap[id] = newPtr.Interface()
 		this.Set("_goId", js.ValueOf(id))
 
+		if constructorFunc.IsValid() {
+			constructorFunc.Call([]reflect.Value{
+				newPtr,
+				reflect.ValueOf(this),
+				reflect.ValueOf(args),
+			})
+		}
+
 		return nil
 	})
 
-	classTypePtr := reflect.PointerTo(classType)
-	methodNames := getValueMethodNames(classType)
 	prototype := constructor.Get("prototype")
 
-	for i := 0; i < classTypePtr.NumMethod(); i++ {
-		method := classTypePtr.Method(i)
+	for name, valueMethod := range valueMethods {
+		constructor.Set(name, valueMethod)
+	}
 
-		if slices.Contains(methodNames, method.Name) {
-			bound := classValue.Method(i)
-			constructor.Set(lowerFirst(method.Name), js.FuncOf(func(this js.Value, args []js.Value) any {
-				callArgs := []reflect.Value{reflect.ValueOf(this), reflect.ValueOf(args)}
-				results := bound.Call(callArgs)
-				if len(results) > 0 { return results[0].Interface() }
-				return nil
-			}))
-		} else {
-			prototype.Set(lowerFirst(method.Name), createClassFuncMember(method))
-		}
+	for name, prototypeMethod := range prototypeMethods {
+		prototype.Set(name, prototypeMethod)
 	}
 
 	return constructor, nil
