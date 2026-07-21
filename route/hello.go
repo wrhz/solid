@@ -1,11 +1,17 @@
 package route
 
 import (
-	solidRoute "github.com/wrhz/solid/route"
+	"github.com/wrhz/solid"
 	"github.com/wrhz/solid/server"
+
+	solidRoute "github.com/wrhz/solid/route"
 )
 
-type Hello struct{}
+type MessageStruct struct {
+	Message string `json:"message"`
+}
+
+type Hello struct {}
 
 func NewHello() *Hello {
 	return &Hello{}
@@ -32,5 +38,7 @@ func (h *Hello) ServerEnd() {
 }
 
 func (h *Hello) helloGet(c *server.Context) error {
-	return c.StringResponse("Hello Solid", 200)
+	return c.JSON(solid.H{
+		"message": "ok",
+	}, 200)
 }

@@ -4,7 +4,7 @@ const go = new Go();
 
 async function load(module: string): Promise<any> {
     if ((window as any).goExports == undefined) {
-        (window as any).goExports = {}
+        (window as any).goExports = {};
     }
 
     go.argv = [module];

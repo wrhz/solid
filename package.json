@@ -4,7 +4,8 @@
   "description": "This is a full-stack framework based on the Go language, created specifically to enhance developer happiness.",
   "main": "index.js",
   "scripts": {
-    "build": "vite build && sass resource:dist/resource"
+    "build": "vite build && sass resource/styles:output/styles",
+    "build:watch": "vite build --watch && sass resource/styles:output/styles"
   },
   "repository": {
     "type": "git",
