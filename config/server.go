@@ -2,6 +2,7 @@ package config
 
 import (
 	"crypto/tls"
+	"net/http"
 
 	solidRoute "github.com/wrhz/solid/route"
 )
@@ -14,6 +15,8 @@ type ServerConfigStruct struct {
 	tlsCertFile string
 	tlsKeyFile  string
 	tlsConfig   *tls.Config
+
+	serverConfig *http.Server
 
 	debug bool
 }
@@ -36,6 +39,10 @@ func (s *ServerConfigStruct) SetHost(host string) {
 }
 
 func (s *ServerConfigStruct) SetMainStruct(mainStruct solidRoute.SolidMainRoute) {
+	if mainStruct == nil {
+		panic("The mainStruct can't be nil")
+	}
+
 	s.mainStruct = mainStruct
 }
 
@@ -49,6 +56,10 @@ func (s *ServerConfigStruct) SetTLSKeyFile(keyFile string) {
 
 func (s *ServerConfigStruct) SetTLSConfig(tlsConfig *tls.Config) {
 	s.tlsConfig = tlsConfig
+}
+
+func (s *ServerConfigStruct) SetServerConfig(serverConfig *http.Server) {
+	s.serverConfig = serverConfig
 }
 
 func (s *ServerConfigStruct) GetPort() int {
@@ -73,6 +84,14 @@ func (s *ServerConfigStruct) GetTLSKeyFile() string {
 
 func (s *ServerConfigStruct) GetTLSConfig() *tls.Config {
 	return s.tlsConfig
+}
+
+func (s *ServerConfigStruct) GetServerConfig() *http.Server {
+	if s.serverConfig == nil {
+		s.serverConfig = &http.Server{}
+	}
+
+	return s.serverConfig
 }
 
 func (s *ServerConfigStruct) GetDebug() bool {

@@ -39,6 +39,10 @@ func (d *DatabaseConfigStruct) RegisterGormModels(models ...any) {
 }
 
 func (d *DatabaseConfigStruct) GetGormModels() []any {
+	if d.gormModels == nil {
+        d.gormModels = []any{}
+    }
+
 	return d.gormModels
 }
 
@@ -79,6 +83,10 @@ func (d *DatabaseConfigStruct) RegisterXormModels(models ...any) {
 }
 
 func (d *DatabaseConfigStruct) GetXormModels() []any {
+	if d.xormModels == nil {
+        d.xormModels = []any{}
+    }
+
 	return d.xormModels
 }
 

@@ -1,11 +1,14 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/goccy/go-reflect"
 	"github.com/gorilla/sessions"
 
 	solidManager "github.com/wrhz/solid/manager"
+	"github.com/wrhz/solid/util"
 )
 
 type Session struct {
@@ -66,4 +69,34 @@ func (s *Session) Clear() (error) {
 func (s *Session) RemoveValue(name any) (error) {
 	delete(s.session.Values, name)
 	return s.session.Save(s.r, s.w)
+}
+
+func (c *Context) BindSession(s any, name string) error {
+	v := reflect.ValueOf(s)
+
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	if v.Kind() != reflect.Struct {
+		return fmt.Errorf("BindSession: expected struct, got %v", v.Kind())
+	}
+
+	session, err := c.Session(name, &SessionOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to get session: %w", err)
+	}
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Type().Field(i)
+		sessionTag := field.Tag.Get("session")
+
+		if sessionTag == "" {
+			sessionTag = util.LowerFirst(field.Name)
+		}
+
+		v.Field(i).Set(reflect.ValueOf(session.Get(sessionTag)))
+	}
+
+	return nil
 }

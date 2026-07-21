@@ -7,6 +7,8 @@ var settingsConfig = NewSettingsConfig()
 var websocketConfig = NewWebSocketConfig()
 var databaseConfig = NewDatabaseConfig()
 var templateConfig = NewTemplateConfigStruct()
+var validatorConfig = NewValidatorConfigStruct()
+var corsConfig = NewCorsConfig()
 
 func GetServerConfig() *ServerConfigStruct {
 	return serverConfig
@@ -28,11 +30,21 @@ func GetTemplateConfig() *TemplateConfigStruct {
 	return templateConfig
 }
 
+func GetValidatorConfig() *ValidatorConfigStruct {
+	return validatorConfig
+}
+
+func GetCorsConfig() *CorsConfig {
+	return corsConfig
+}
+
 func InitConfigManager() {
 	solidManager.NewConfigManager(
 		settingsConfig,
 		websocketConfig,
 		databaseConfig,
 		templateConfig,
+		validatorConfig,
+		corsConfig,
 	)
 }

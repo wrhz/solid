@@ -12,7 +12,7 @@ func GetRoutes() map[string]func(w http.ResponseWriter, r *http.Request) {
 	return getRoutes
 }
 
-func (r *RouteStruct) Get(path string, callFunc func(c *server.Context) error, middlewares ...func(c *server.Context, next http.HandlerFunc)) {
+func (r *RouteStruct) Get(path string, callFunc func(c *server.Context) error, middlewares ...func(c *server.Context)) {
     handler := routeFuncHandle(callFunc)
 
     for i := len(middlewares) - 1; i >= 0; i-- {
@@ -20,8 +20,11 @@ func (r *RouteStruct) Get(path string, callFunc func(c *server.Context) error, m
         currentHandler := handler
 
         handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-            c := &server.Context{Writer: w, Request: req}
-            currentMw(c, currentHandler.ServeHTTP)
+            c := server.NewContext(req, w)
+
+            c.SetNext(currentHandler.ServeHTTP)
+
+            currentMw(c)
         })
     }
 

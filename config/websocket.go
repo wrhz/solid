@@ -26,6 +26,10 @@ func (w *WebSocketConfigStruct) SetPongWait(pongWait int) {
 }
 
 func (w *WebSocketConfigStruct) GetUpgrader() *websocket.Upgrader {
+	if w.upgrader == nil {
+		w.upgrader = &websocket.Upgrader{}
+	}
+
 	return w.upgrader
 }
 

@@ -1,11 +1,6 @@
 package config
 
-import (
-	"os"
-	"strconv"
-
-	"github.com/gorilla/sessions"
-)
+import "github.com/gorilla/sessions"
 
 type SettingsConfigStruct struct {
 	staticMaxAge int
@@ -15,6 +10,8 @@ type SettingsConfigStruct struct {
 
 	sessionsPairs []byte
 	sessionStore  sessions.Store
+
+	trustedProxies []string
 }
 
 func NewSettingsConfig() *SettingsConfigStruct {
@@ -46,60 +43,38 @@ func (s *SettingsConfigStruct) SetSessionStore(sessionStore sessions.Store) {
 	s.sessionStore = sessionStore
 }
 
-func (s *SettingsConfigStruct) GetStaticMaxAge() (int, error) {
-	staticMaxAge := s.staticMaxAge
-	if staticMaxAge == 0 {
-		value, exists := os.LookupEnv("SOLID_STATIC_MAX_AGE")
-		if exists {
-			if val, err := strconv.Atoi(value); err == nil {
-				staticMaxAge = val
-			} else {
-				return 0, err
-			}
-		} else {
-			return 0, nil
-		}
-	}
-
-	return staticMaxAge, nil
+func (s *SettingsConfigStruct) SetTrustedProxies(trustedProxies []string) {
+	s.trustedProxies = trustedProxies
 }
 
-func (s *SettingsConfigStruct) GetMaxBytesMemory() (int64, error) {
-	maxBytesMemory := s.maxBytesMemory
-	if maxBytesMemory == 0 {
-		value, exists := os.LookupEnv("SOLID_MAX_BYTES_MEMORY")
-		if exists {
-			if val, err := strconv.ParseInt(value, 10, 64); err == nil {
-				maxBytesMemory = val
-			} else {
-				return 0, err
-			}
-		} else {
-			return 0, nil
-		}
-	}
-
-	return maxBytesMemory, nil
+func (s *SettingsConfigStruct) GetStaticMaxAge() int {
+	return s.staticMaxAge
 }
 
-func (s *SettingsConfigStruct) GetMultipartFormMaxMemory() (int64, error) {
-	multipartFormMaxMemory := s.multipartFormMaxMemory
-	if multipartFormMaxMemory == 0 {
-		value, exists := os.LookupEnv("SOLID_MULTIPART_FORM_MAX_MEMORY")
-		if exists {
-			if val, err := strconv.ParseInt(value, 10, 64); err == nil {
-				multipartFormMaxMemory = val
-			} else {
-				return 0, err
-			}
-		} else {
-			return 0, nil
-		}
+func (s *SettingsConfigStruct) GetMaxBytesMemory() int64 {
+	return s.maxBytesMemory
+}
+
+func (s *SettingsConfigStruct) GetMultipartFormMaxMemory() int64 {
+	return s.multipartFormMaxMemory
+}
+
+func (s *SettingsConfigStruct) GetSessionsSecret() []byte {
+	if s.sessionsPairs == nil {
+		s.sessionsPairs = []byte{}
 	}
 
-	return multipartFormMaxMemory, nil
+	return s.sessionsPairs
 }
 
 func (s *SettingsConfigStruct) GetSessionStore() sessions.Store {
 	return s.sessionStore
+}
+
+func (s *SettingsConfigStruct) GetTrustedProxies() []string {
+	if s.trustedProxies == nil {
+		s.trustedProxies = []string{}
+	}
+
+	return s.trustedProxies
 }

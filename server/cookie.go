@@ -1,8 +1,12 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/goccy/go-reflect"
+	"github.com/wrhz/solid/util"
 )
 
 type Cookie struct {
@@ -81,4 +85,41 @@ func (c *Context) RemoveCookie(name string) {
 		Value:  "",
 		MaxAge: -1,
 	})
+}
+
+func (c *Context) BindCookie(s any) error {
+	v := reflect.ValueOf(s)
+
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	if v.Kind() != reflect.Struct {
+		return fmt.Errorf("BindCookie: expected struct, got %v", v.Kind())
+	}
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Type().Field(i)
+		cookieTag := field.Tag.Get("cookie")
+
+		if cookieTag == "" {
+			cookieTag = util.LowerFirst(field.Name)
+		}
+
+		cookie, err :=c.Request.Cookie(cookieTag)
+		if err != nil {
+			return fmt.Errorf("failed to get cookie %q: %w", cookieTag, err)
+		}
+
+		if cookie != nil {
+			value, err := util.ParseType(cookie.Value, field.Type.Kind())
+			if err != nil {
+				return fmt.Errorf("failed to parse cookie %q: %w", cookieTag, err)
+			}
+
+			v.Field(i).Set(reflect.ValueOf(value))
+		}
+	}
+
+	return nil
 }

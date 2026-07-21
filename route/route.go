@@ -10,7 +10,7 @@ import (
 )
 
 type RouteFunc func(c *server.Context) error
-type MiddleWareFunc func(c *server.Context, next http.HandlerFunc)
+type MiddlewareFunc func(c *server.Context)
 
 type RouteStruct struct {
 	perfix      string
@@ -37,7 +37,7 @@ type SolidMainRoute interface {
 
 func routeFuncHandle(callFunc RouteFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		ctx := &server.Context{Writer: w, Request: req}
+		ctx := server.NewContext(req, w)
 
 		routeRequestStart(ctx)
 		
@@ -149,10 +149,14 @@ func (r *RouteStruct) Group(prefix string, callStruct SolidRoute) {
 	callStruct.RegisterRoute(route)
 }
 
-func (r *MiddlewareStruct) Use(middleware MiddleWareFunc) {
+func (r *MiddlewareStruct) Use(middleware MiddlewareFunc) {
 	*r.middlewares = append(*r.middlewares, func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			middleware(&server.Context{Writer: w, Request: r}, next.ServeHTTP)
+			context := server.NewContext(r, w)
+
+			context.SetNext(next.ServeHTTP)
+
+			middleware(context)
 		})
 	})
 }
