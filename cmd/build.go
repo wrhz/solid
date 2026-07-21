@@ -22,13 +22,16 @@ var buildCmd = &cobra.Command{
 }
 
 func buildServer(cmd *cobra.Command, args []string) error {
-	if err := npmBuild(); err != nil {
+	viteCmd := exec.Command("npm", "run", "build")
+
+	viteCmd.Stdout = os.Stdout
+	viteCmd.Stderr = os.Stderr
+
+	if err := viteCmd.Run(); err != nil {
 		return err
 	}
 
-	err := exportWasm()
-
-	if err != nil {
+	if err := exportWasm(); err != nil {
 		return err
 	}
 

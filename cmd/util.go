@@ -8,20 +8,6 @@ import (
 	"strings"
 )
 
-func npmBuild() error {
-	viteCmd := exec.Command("npm", "run", "build")
-
-	viteCmd.Stdout = os.Stdout
-	viteCmd.Stderr = os.Stderr
-
-	err := viteCmd.Run()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func getDirs() ([]*WasmDir, error) {
 	rootPath := filepath.Join("resource", "wasm")
 
@@ -88,8 +74,27 @@ func isDir(path string) (bool, error) {
     return info.IsDir(), nil
 }
 
+func clearDir(dir string) error {
+    entries, err := os.ReadDir(dir)
+    if err != nil {
+        return fmt.Errorf("读取目录失败: %w", err)
+    }
+
+    for _, entry := range entries {
+        fullPath := filepath.Join(dir, entry.Name())
+
+        if err := os.RemoveAll(fullPath); err != nil {
+            return fmt.Errorf("删除 %s 失败: %w", fullPath, err)
+        }
+    }
+    return nil
+}
+
 func exportWasm() error {
 	wasmDirPath := filepath.Join("resource", "wasm")
+	wasmOutputPath := filepath.Join("output", "wasm")
+
+	clearDir(wasmOutputPath)
 
 	is, err := isDir("./" + wasmDirPath)
 
@@ -120,7 +125,7 @@ func exportWasm() error {
 			var buildCmd *exec.Cmd
 
 			inputPath := "./" + filepath.Join(wasmDirPath, dir.inputDir)
-			outputPath := filepath.Join(".", "dist", "resource", "wasm", dir.outputDir)
+			outputPath := filepath.Join(wasmOutputPath, dir.outputDir)
 
 			buildCmd = exec.Command("go", "build", "-o", outputPath, inputPath)
 
@@ -135,4 +140,19 @@ func exportWasm() error {
 	}
 
 	return nil
+}
+
+func getSubDirNames(dirPath string) ([]string, error) {
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var dirs []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			dirs = append(dirs, entry.Name())
+		}
+	}
+	return dirs, nil
 }

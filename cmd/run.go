@@ -4,6 +4,7 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 
@@ -17,23 +18,42 @@ var runCmd = &cobra.Command{
 }
 
 func runServer(cmd *cobra.Command, args []string) error {
-	if err := npmBuild(); err != nil {
+	viteCmd := exec.Command("npm", "run", "build:watch")
+
+	viteCmd.Stdout = os.Stdout
+	viteCmd.Stderr = os.Stderr
+
+	if err := viteCmd.Start(); err != nil {
 		return err
 	}
 
-	err := exportWasm()
+	defer func() {
+        if viteCmd.Process != nil {
+			if err := killProcessTree(viteCmd.Process.Pid); err != nil {
+				fmt.Printf("warning: failed to kill process tree: %v\n", err)
+			} else {
+				fmt.Println("process tree killed")
+			}
+			_ = viteCmd.Process.Kill()
+		}
+    }()
+
+	if err := exportWasm(); err != nil {
+		return err
+	}
+
+	dirs, err := getSubDirNames("./cmd")
 
 	if err != nil {
 		return err
 	}
 
-	appCmd := exec.Command("go", "run", ".", "--debug")
+	appCmd := exec.Command("go", "run", "./cmd/" + dirs[0], "--debug")
 	
 	appCmd.Stdout = os.Stdout
 	appCmd.Stderr = os.Stderr
 
-	err = appCmd.Run()
-	if err != nil {
+	if err := appCmd.Run(); err != nil {
 		return err
 	}
 

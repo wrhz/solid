@@ -8,18 +8,24 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/spf13/cobra"
 	"github.com/iancoleman/strcase"
+	"github.com/spf13/cobra"
 )
 
-var orm string
+// modelCmd represents the model command
+var modelCmd = &cobra.Command{
+	Use:   "model",
+	Short: "A brief description of your command",
+	Long: `A longer description that spans multiple lines and likely contains examples
+and usage of using your command. For example:
 
-var createModelCmd = &cobra.Command{
-	Use:   "createModel",
-	Short: "You can use it to create a database model for your solid project",
-	Args:  cobra.MinimumNArgs(1),
+Cobra is a CLI library for Go that empowers applications.
+This application is a tool to generate the needed files
+to quickly create a Cobra application.`,
 	RunE: createModel,
 }
+
+var orm string
 
 func createModel(cmd *cobra.Command, args []string) error {
 	if orm != "gorm" && orm != "xorm" && orm != "both" {
@@ -72,7 +78,7 @@ type %s struct {
 }
 
 func init() {
-	createModelCmd.Flags().StringVar(&orm, "orm", "both", "Choose model's orm(xorm or gorm or both)")
+	modelCmd.Flags().StringVar(&orm, "orm", "both", "Choose model's orm(xorm or gorm or both)")
 
-	rootCmd.AddCommand(createModelCmd)
+	createCmd.AddCommand(modelCmd)
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
@@ -25,10 +26,11 @@ func createProject(cmd *cobra.Command, args []string) error {
 	gitCmd.Stdout = os.Stdout
 	gitCmd.Stderr = os.Stderr
 
-	err := gitCmd.Run()
-	if err != nil {
+	if err := gitCmd.Run(); err != nil {
 		os.Exit(1)
 	}
+
+	os.Rename(filepath.Join(projectName, "cmd", "solid"), filepath.Join(projectName, "cmd", projectName))
 
 	fmt.Print("\nDo you want to run \"npm install\"?(y/n): ")
 
@@ -45,8 +47,7 @@ func createProject(cmd *cobra.Command, args []string) error {
 		npmCmd.Stderr = os.Stderr
 		npmCmd.Dir = projectName
 
-		err := npmCmd.Run()
-		if err != nil {
+		if err := npmCmd.Run(); err != nil {
 			os.Exit(1)
 		}
 	}
@@ -66,8 +67,7 @@ func createProject(cmd *cobra.Command, args []string) error {
 		initCmd.Stderr = os.Stderr
 		initCmd.Dir = projectName
 
-		err := initCmd.Run()
-		if err != nil {
+		if err := initCmd.Run(); err != nil {
 			os.Exit(1)
 		}
 
@@ -86,8 +86,7 @@ func createProject(cmd *cobra.Command, args []string) error {
 			tidyCmd.Stderr = os.Stderr
 			tidyCmd.Dir = projectName
 
-			err := tidyCmd.Run()
-			if err != nil {
+			if err := tidyCmd.Run(); err != nil {
 				os.Exit(1)
 			}
 		}
