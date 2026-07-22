@@ -44,11 +44,11 @@ func TestRoute(callFunc func()) error {
 	httpServer.Handler = serve
 	httpServer.TLSConfig = serverConfig.GetTLSConfig()
 
-	mainStruct.ServerStart()
-
 	callFunc()
 
-	mainStruct.ServerEnd()
+	if err := mainStruct.ServerEnd(); err != nil {
+		return err
+	}
 
 	return nil
 }

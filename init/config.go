@@ -14,6 +14,7 @@ func InitConfigs() {
 	config.TemplateConfig()
 	config.ValidatorConfig()
 	config.CorsConfig()
+	config.GrpcConfig()
 
 	solidConfig.InitConfigManager()
 }

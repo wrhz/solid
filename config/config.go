@@ -9,6 +9,7 @@ var databaseConfig = NewDatabaseConfig()
 var templateConfig = NewTemplateConfigStruct()
 var validatorConfig = NewValidatorConfigStruct()
 var corsConfig = NewCorsConfig()
+var grpcConfig = NewGrpcConfig()
 
 func GetServerConfig() *ServerConfigStruct {
 	return serverConfig
@@ -36,6 +37,10 @@ func GetValidatorConfig() *ValidatorConfigStruct {
 
 func GetCorsConfig() *CorsConfig {
 	return corsConfig
+}
+
+func GetGrpcConfig() *GrpcConfig {
+	return grpcConfig
 }
 
 func InitConfigManager() {

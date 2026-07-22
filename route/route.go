@@ -25,7 +25,7 @@ type MiddlewareStruct struct {
 }
 
 type SolidRoute interface {
-	Init(*RouteStruct)
+	Init() error
 
 	RegisterRoute(*RouteStruct)
 	RegisterMiddleware(*MiddlewareStruct)
@@ -34,8 +34,8 @@ type SolidRoute interface {
 type SolidMainRoute interface {
 	SolidRoute
 
-	ServerStart()
-	ServerEnd()
+	ServerStart() error
+	ServerEnd() error
 }
 
 type Route struct {
@@ -151,13 +151,18 @@ func (r *RouteStruct) Any(path string, callFunc RouteFunc) *Route {
 	return r.Head(path, callFunc)
 }
 
-func (r *RouteStruct) Group(prefix string, callStruct SolidRoute) {
+func (r *RouteStruct) Group(prefix string, callStruct SolidRoute) error {
 	route := &RouteStruct{ perfix: r.perfix + prefix, middlewares: r.middlewares }
 	middleware := &MiddlewareStruct{ middlewares: &route.middlewares }
 
-	callStruct.Init(route)
+	if err := callStruct.Init(); err != nil {
+		return err
+	}
+	
 	callStruct.RegisterMiddleware(middleware)
 	callStruct.RegisterRoute(route)
+
+	return nil
 }
 
 func (r *MiddlewareStruct) Use(middleware MiddlewareFunc) {

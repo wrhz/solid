@@ -22,7 +22,13 @@ func InitServer(serverConfig *solidConfig.ServerConfigStruct) (solidRoute.SolidM
 
 	mainStruct := serverConfig.GetMainStruct()
 
-	mainStruct.Init(route)
+	if err := mainStruct.ServerStart(); err != nil {
+		return nil, nil, err
+	}
+
+	if err := mainStruct.Init(); err != nil {
+		return nil, nil, err
+	}
 
 	mainStruct.RegisterMiddleware(middleware)
 
