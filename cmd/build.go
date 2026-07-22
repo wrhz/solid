@@ -35,7 +35,13 @@ func buildServer(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	appCmd := exec.Command("go", "build", ".")
+	dirs, err := getSubDirNames("./cmd")
+
+	if err != nil {
+		return err
+	}
+
+	appCmd := exec.Command("go", "build", "./cmd/" + dirs[0])
 	
 	appCmd.Stdout = os.Stdout
 	appCmd.Stderr = os.Stderr
