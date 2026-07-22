@@ -12,6 +12,8 @@ type ServerConfigStruct struct {
 	port       int
 	mainStruct solidRoute.SolidMainRoute
 
+	autoTls bool
+	autoTlsHostPolicy[]string
 	tlsCertFile string
 	tlsKeyFile  string
 	tlsConfig   *tls.Config
@@ -46,6 +48,14 @@ func (s *ServerConfigStruct) SetMainStruct(mainStruct solidRoute.SolidMainRoute)
 	s.mainStruct = mainStruct
 }
 
+func (s *ServerConfigStruct) SetAutoTLS(autoTls bool) {
+	s.autoTls = autoTls
+}
+
+func (s *ServerConfigStruct) SetAutoTLSHostPolicy(hostPolicy ...string) {
+	s.autoTlsHostPolicy = hostPolicy
+}
+
 func (s *ServerConfigStruct) SetTLSCertFile(certFile string) {
 	s.tlsCertFile = certFile
 }
@@ -72,6 +82,14 @@ func (s *ServerConfigStruct) GetHost() string {
 
 func (s *ServerConfigStruct) GetMainStruct() solidRoute.SolidMainRoute {
 	return s.mainStruct
+}
+
+func (s *ServerConfigStruct) GetAutoTLS() bool {
+	return s.autoTls
+}
+
+func (s *ServerConfigStruct) GetAutoTLSHostPolicy() []string {
+	return s.autoTlsHostPolicy
 }
 
 func (s *ServerConfigStruct) GetTLSCertFile() string {

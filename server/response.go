@@ -160,7 +160,7 @@ func (c *Context) Stream(streamFunc func(w http.ResponseWriter)) error {
 	return nil
 }
 
-func (c *Context) Error(status int, err error) error {
+func (c *Context) StringError(status int, err error) error {
 	c.Writer.WriteHeader(status)
 
 	_, err = fmt.Fprintf(c.Writer, "%s", err.Error())

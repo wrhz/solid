@@ -12,7 +12,7 @@ func DeleteRoutes() map[string]func(w http.ResponseWriter, r *http.Request) {
 	return deleteRoutes
 }
 
-func (r *RouteStruct) Delete(path string, callFunc func(c *server.Context) error, middlewares ...func(c *server.Context, next http.HandlerFunc)) {
+func (r *RouteStruct) Delete(path string, callFunc func(c *server.Context) error, middlewares ...func(c *server.Context, next http.HandlerFunc)) *Route {
     handler := routeFuncHandle(callFunc)
 
     for i := len(middlewares) - 1; i >= 0; i-- {
@@ -25,5 +25,9 @@ func (r *RouteStruct) Delete(path string, callFunc func(c *server.Context) error
         })
     }
 
-    deleteRoutes[r.perfix+path] = r.routeChain(handler).ServeHTTP
+    perfix := r.perfix+path
+
+    deleteRoutes[perfix] = r.routeChain(handler).ServeHTTP
+
+    return &Route{ perfix: perfix }
 }

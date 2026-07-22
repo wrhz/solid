@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 
 	"github.com/wrhz/solid/database"
 	"github.com/wrhz/solid/server"
 )
+
+var routeNames = map[string]string{}
 
 type RouteFunc func(c *server.Context) error
 type MiddlewareFunc func(c *server.Context)
@@ -33,6 +36,14 @@ type SolidMainRoute interface {
 
 	ServerStart()
 	ServerEnd()
+}
+
+type Route struct {
+	perfix string
+}
+
+func (r *Route) Name(name string) {
+	routeNames[name] = r.perfix
 }
 
 func routeFuncHandle(callFunc RouteFunc) http.Handler {
@@ -130,14 +141,14 @@ func NewMiddleware(middlewares *[]func(http.Handler) http.Handler) *MiddlewareSt
 	return &MiddlewareStruct{ middlewares: middlewares }
 }
 
-func (r *RouteStruct) Any(path string, callFunc RouteFunc) {
+func (r *RouteStruct) Any(path string, callFunc RouteFunc) *Route {
 	r.Get(path, callFunc)
 	r.Post(path, callFunc)
 	r.Patch(path, callFunc)
 	r.Delete(path, callFunc)
 	r.Put(path, callFunc)
 	r.Options(path, callFunc)
-	r.Head(path, callFunc)
+	return r.Head(path, callFunc)
 }
 
 func (r *RouteStruct) Group(prefix string, callStruct SolidRoute) {
@@ -158,5 +169,25 @@ func (r *MiddlewareStruct) Use(middleware MiddlewareFunc) {
 
 			middleware(context)
 		})
+	})
+}
+
+func Reverse(name string, args ...any) string {
+	perfix, ok := routeNames[name]
+
+	if !ok {
+		return ""
+	}
+
+	re := regexp.MustCompile(`\{([^}]*)\}`)
+	i := 0
+
+	return re.ReplaceAllStringFunc(perfix, func(match string) string {
+		if i < len(args) {
+			val := args[i]
+			i++
+			return fmt.Sprint(val)
+		}
+		return ""
 	})
 }

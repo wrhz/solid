@@ -18,6 +18,8 @@ type Context struct {
 	Writer http.ResponseWriter
 	Request *http.Request
 
+	Errors []error
+
 	gormDatabase *gorm.DB
 	xormSession *xorm.Session
 
@@ -87,6 +89,10 @@ func (c *Context) Next() {
 
 func (c *Context) Abort() {
 	c.next = nil
+}
+
+func (c *Context) Error(err error) {
+	c.Errors = append(c.Errors, err)
 }
 
 func (c *Context) ClientIP() string {
