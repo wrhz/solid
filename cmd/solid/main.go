@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -11,6 +13,7 @@ import (
 	"time"
 
 	"github.com/wrhz/solid/database"
+	"golang.org/x/crypto/acme/autocert"
 
 	solidConfig "github.com/wrhz/solid/config"
 	solidInit "github.com/wrhz/solid/init"
@@ -42,15 +45,35 @@ func main() {
 
 	httpServer := serverConfig.GetServerConfig()
 
+	tlsConfig := serverConfig.GetTLSConfig()
+	if tlsConfig != nil {
+		httpServer.TLSConfig = tlsConfig
+	} else if serverConfig.GetAutoTLS() {
+		m := &autocert.Manager{
+			Cache: autocert.DirCache("./.cache"),
+
+			HostPolicy: autocert.HostWhitelist(serverConfig.GetAutoTLSHostPolicy()...),
+		}
+
+		go func() {
+			http.ListenAndServe(":80", m.HTTPHandler(nil))
+		}()
+
+		httpServer.TLSConfig = &tls.Config{
+			GetCertificate: m.GetCertificate,
+		}
+	}
+
 	httpServer.Addr = ":" + strconv.Itoa(serverConfig.GetPort())
 	httpServer.Handler = serve
-	httpServer.TLSConfig = solidConfig.GetServerConfig().GetTLSConfig()
 
 	mainStruct.ServerStart()
 
 	go func ()  {
-		if certFile := solidConfig.GetServerConfig().GetTLSCertFile(); certFile != "" {
-			keyFile := solidConfig.GetServerConfig().GetTLSKeyFile()
+		if solidConfig.GetServerConfig().GetAutoTLS() {
+			httpServer.ListenAndServeTLS("", "")
+		} else if certFile := serverConfig.GetTLSCertFile(); certFile != "" {
+			keyFile := serverConfig.GetTLSKeyFile()
 
 			if err := httpServer.ListenAndServeTLS("./certs/" + certFile, "./certs/" + keyFile); err != nil {
 				fmt.Println("Server failed:", err)
